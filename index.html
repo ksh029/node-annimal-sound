@@ -85,8 +85,8 @@ const save=()=>{try{localStorage.setItem('worktable',JSON.stringify(S))}catch(e)
 const byId=id=>S.shifts.find(x=>x.id===id);
 const defHol=k=>{const d=new Date(k+'T00:00:00').getDay();return d===0||d===6||HOL.has(k)};
 const isHol=k=>{const e=S.days[k];return e&&e.h!==undefined?!!e.h:defHol(k)};
-const clean=k=>{const e=S.days[k];if(e&&e.s===undefined&&!e.m&&e.h===undefined)delete S.days[k]};
-function alarmOf(k){const e=S.days[k],s=e&&e.s&&byId(e.s);if(!s)return null;const tm=isHol(k)?s.ah:s.aw;return tm?{s:s,tm:tm}:null}
+const clean=k=>{const e=S.days[k];if(e&&e.s===undefined&&!e.m&&e.h===undefined&&!e.n)delete S.days[k]};
+function alarmOf(k){const e=S.days[k],s=e&&e.s&&byId(e.s);if(!s||e.n)return null;const tm=isHol(k)?s.ah:s.aw;return tm?{s:s,tm:tm}:null}
 function alarmUrl(a){const p=a.tm.split(':').map(Number);return 'intent:#Intent;action=android.intent.action.SET_ALARM;i.android.intent.extra.alarm.HOUR='+p[0]+';i.android.intent.extra.alarm.MINUTES='+p[1]+';S.android.intent.extra.alarm.MESSAGE='+encodeURIComponent(a.s.name)+';end'}
 let cur=new Date();cur.setDate(1);cur.setHours(0,0,0,0);
 let sel=null;
@@ -112,7 +112,7 @@ function render(){
   $('#grid').innerHTML=h;
   $('#sum').innerHTML=S.shifts.map(s=>'<span><b class="chip" style="background:'+s.color+'">'+esc(s.short)+'</b>'+esc(s.name)+' '+(cnt[s.id]||0)+'일</span>').join('');
   const t=new Date();t.setDate(t.getDate()+1);const nk=key(t),na=alarmOf(nk);
-  $('#nx').innerHTML=na?'<div class="nx"><div>내일 '+dayWord(nk)+' '+chipOf(na.s.id)+' '+esc(na.s.name)+' · '+(isHol(nk)?'휴일':'평일')+'</div><a class="btn" href="'+alarmUrl(na)+'" target="_blank" rel="noopener">⏰ '+na.tm+' 알람 맞추기</a></div>':'';
+  $('#nx').innerHTML=na&&!NP?'<div class="nx"><div>내일 '+dayWord(nk)+' '+chipOf(na.s.id)+' '+esc(na.s.name)+' · '+(isHol(nk)?'휴일':'평일')+'</div><a class="btn" href="'+alarmUrl(na)+'" target="_blank" rel="noopener">⏰ '+na.tm+' 알람 맞추기</a></div>':'';
 }
 
 function open(html){$('#sheet').innerHTML=html;$('#bg').classList.add('on')}
@@ -120,12 +120,12 @@ function close(){$('#bg').classList.remove('on')}
 
 function openDay(k){
   sel=k;
-  const e=S.days[k]||{},a=alarmOf(k),hol=isHol(k);
+  const e=S.days[k]||{},a=alarmOf(k),hol=isHol(k),s0=e.s&&byId(e.s),rt=s0?(hol?s0.ah:s0.aw):'';
   open('<h2>'+dayWord(k)+' · '+(hol?'휴일':'평일')+'</h2><div class="opts">'
     +S.shifts.map(s=>'<button data-set="'+s.id+'"'+(e.s===s.id?' class="on"':'')+'><b class="chip" style="background:'+s.color+'">'+esc(s.short)+'</b>'+esc(s.name)+'</button>').join('')
     +'<button data-set="">비우기</button></div>'
     +'<button class="full" id="hol">'+(hol?'평일로 바꾸기':'휴일로 바꾸기')+'</button>'
-    +(a?'<h3>알람</h3><a class="btn" href="'+alarmUrl(a)+'" target="_blank" rel="noopener">⏰ '+a.tm+' 알람 맞추기 ('+esc(a.s.name)+', '+(hol?'휴일':'평일')+')</a><p class="hint">시계 앱이 열리면 저장만 누르세요. 가장 가까운 '+a.tm+'에 한 번 울려요. 열리지 않으면 시계 앱에서 직접 맞춰 주세요.</p>':'')
+    +(rt?'<h3>알람</h3>'+(NP?(e.n?'<p class="hint">이 날은 알람이 꺼져 있어요 ('+rt+').</p><button class="full pri" id="aln">이 날 알람 켜기</button>':'<p>⏰ '+rt+' 알람이 자동으로 예약돼 있어요 ('+(hol?'휴일':'평일')+').</p><button class="full" id="aln">이 날 알람 끄기</button>'):(a?'<a class="btn" href="'+alarmUrl(a)+'" target="_blank" rel="noopener">⏰ '+a.tm+' 알람 맞추기 ('+esc(a.s.name)+', '+(hol?'휴일':'평일')+')</a><p class="hint">시계 앱이 열리면 저장만 누르세요. 가장 가까운 '+a.tm+'에 한 번 울려요.</p>':'')):'')
     +'<h3>메모</h3><input type="text" id="memo" maxlength="80" placeholder="예: 대타, 병원 예약" value="'+esc(e.m||'')+'">'
     +'<h3>패턴 반복</h3>'
     +(S.pattern.length?'<div class="pat">'+S.pattern.map(chipOf).join('')+'</div><button class="full pri" id="apply">이 날부터 60일 적용</button>':'<p class="hint">설정(⚙)에서 반복 패턴을 먼저 만들어 두세요. 예: 조 → 조 → 야 → 야 → 휴 → 휴</p>')
@@ -137,6 +137,12 @@ function setShift(id){
   const e=S.days[sel]=S.days[sel]||{};
   if(id)e.s=id;else delete e.s;
   clean(sel);save();render();close();
+}
+function toggleAl(){const e=S.days[sel]=S.days[sel]||{};if(e.n)delete e.n;else e.n=1;clean(sel);save();render();openDay(sel)}
+function testAlarm(){
+  const m=$('#tstm');
+  if(!NP){m.textContent='앱(APK)에서만 쓸 수 있어요.';return}
+  NP.scheduleAll({alarms:[{t:Date.now()+10000,m:'테스트 알람'}]}).then(()=>{m.textContent='10초 뒤에 알람이 울려요. 알림 권한이 허용되어 있어야 해요.';setTimeout(syncAlarms,15000)}).catch(()=>{m.textContent='예약하지 못했어요.'});
 }
 function toggleHol(){
   const e=S.days[sel]=S.days[sel]||{},want=!isHol(sel);
@@ -162,6 +168,7 @@ function openSettings(){
     +'<h3>반복 패턴</h3><div class="pat">'+S.pattern.map(chipOf).join('')+(S.pattern.length?'':'<span class="hint">비어 있음</span>')+'</div>'
     +'<div class="opts">'+S.shifts.map(s=>'<button data-pat="'+s.id+'"><b class="chip" style="background:'+s.color+'">'+esc(s.short)+'</b>추가</button>').join('')+'<button data-pat="-">한 칸 지우기</button><button data-pat="x">전체 지우기</button></div>'
     +'<p class="hint">날짜를 눌러 “패턴 반복”을 쓰면 그 날부터 순서대로 채워집니다.</p>'
+    +(NP?'<h3>알람 테스트</h3><button class="full" id="tst">10초 뒤 테스트 알람</button><p class="hint" id="tstm"></p>':'')
     +'<h3>캘린더 알람</h3><button class="full pri" id="exp">오늘 이후 근무표 복사</button><textarea id="expt" readonly rows="5" style="display:none;width:100%;margin-top:8px;font:12px monospace;background:var(--bg);color:inherit;border:1px solid var(--line);border-radius:10px;padding:8px"></textarea><p class="hint" id="expm">복사한 내용을 Claude 채팅에 붙여넣으면 캘린더(.ics) 파일로 만들어 드려요.</p>'
     +'<button class="full" id="done">닫기</button>');
 }
@@ -187,6 +194,8 @@ $('#bg').onclick=e=>{
   if(b.dataset.set!==undefined)setShift(b.dataset.set);
   else if(b.id==='apply')applyPattern();
   else if(b.id==='hol')toggleHol();
+  else if(b.id==='aln')toggleAl();
+  else if(b.id==='tst')testAlarm();
   else if(b.id==='exp')exportTxt();
   else if(b.id==='add'){S.shifts.push({id:'s'+Date.now(),name:'새 근무',short:'새',color:'#'+Math.floor(Math.random()*0x888888+0x333333).toString(16).padStart(6,'0'),aw:'',ah:''});save();render();openSettings()}
   else if(b.dataset.del!==undefined){
