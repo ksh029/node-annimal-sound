@@ -8,7 +8,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioAttributes;
-import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 
@@ -19,9 +18,11 @@ public class AlarmReceiver extends BroadcastReceiver {
         if (msg == null || msg.isEmpty()) msg = "근무 알람";
         int id = intent.getIntExtra("id", 0);
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
-        Uri snd = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        String sv = c.getSharedPreferences(AlarmScheduler.PREF, Context.MODE_PRIVATE).getString("sound", "");
+        Uri snd = AlarmScheduler.soundUri(c);
+        String chId = "wt_s_" + (sv == null || sv.isEmpty() ? "def" : Integer.toHexString(sv.hashCode()));
         if (Build.VERSION.SDK_INT >= 26) {
-            NotificationChannel ch = new NotificationChannel("wt_alarm2", "근무 알람", NotificationManager.IMPORTANCE_HIGH);
+            NotificationChannel ch = new NotificationChannel(chId, "근무 알람", NotificationManager.IMPORTANCE_HIGH);
             AudioAttributes aa = new AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -35,7 +36,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         PendingIntent content = PendingIntent.getActivity(c, 0, open,
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         Notification.Builder b = Build.VERSION.SDK_INT >= 26
-                ? new Notification.Builder(c, "wt_alarm2")
+                ? new Notification.Builder(c, chId)
                 : new Notification.Builder(c);
         b.setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setContentTitle("근무 알람")

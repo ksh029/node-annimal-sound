@@ -5,6 +5,9 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -17,6 +20,24 @@ public class AlarmScheduler {
         in.putExtra("id", i);
         return PendingIntent.getBroadcast(c, i, in,
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+    }
+
+    static Uri soundUri(Context c) {
+        String sv = c.getSharedPreferences(PREF, Context.MODE_PRIVATE).getString("sound", "");
+        if (sv == null || sv.isEmpty()) return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        return Uri.parse(sv);
+    }
+
+    static String soundTitle(Context c) {
+        String sv = c.getSharedPreferences(PREF, Context.MODE_PRIVATE).getString("sound", "");
+        if (sv == null || sv.isEmpty()) return "기본 알람음";
+        try {
+            Ringtone r = RingtoneManager.getRingtone(c, Uri.parse(sv));
+            if (r != null) return r.getTitle(c);
+        } catch (Exception e) {
+            // ignore
+        }
+        return "선택한 알람음";
     }
 
     static void schedule(Context c, String json) {
