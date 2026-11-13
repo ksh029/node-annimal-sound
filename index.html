@@ -81,7 +81,7 @@ let S=null;
 try{S=JSON.parse(localStorage.getItem('worktable'))}catch(e){}
 if(!S||!S.shifts)S=JSON.parse(JSON.stringify(DEF));
 S.shifts.forEach(s=>{if(s.aw===undefined){let v='';if(s.t){const p=s.t.split(':').map(Number),t=((p[0]*60+p[1]-(+s.al||0))%1440+1440)%1440;v=pad(Math.floor(t/60))+':'+pad(t%60)}s.aw=v;s.ah=v}});
-const save=()=>{try{localStorage.setItem('worktable',JSON.stringify(S))}catch(e){}};
+const save=()=>{try{localStorage.setItem('worktable',JSON.stringify(S))}catch(e){}syncAlarms()};
 const byId=id=>S.shifts.find(x=>x.id===id);
 const defHol=k=>{const d=new Date(k+'T00:00:00').getDay();return d===0||d===6||HOL.has(k)};
 const isHol=k=>{const e=S.days[k];return e&&e.h!==undefined?!!e.h:defHol(k)};
@@ -158,7 +158,7 @@ function subRow(s,i){
 function openSettings(){
   open('<h2>설정</h2><h3>근무 종류와 알람 시각</h3>'
     +S.shifts.map((s,i)=>'<div class="row"><input type="color" value="'+s.color+'" data-f="color" data-i="'+i+'" aria-label="색상"><input type="text" class="nm" value="'+esc(s.name)+'" data-f="name" data-i="'+i+'" maxlength="8" aria-label="이름"><input type="text" class="sh" value="'+esc(s.short)+'" data-f="short" data-i="'+i+'" maxlength="2" aria-label="약자"><button data-del="'+i+'" aria-label="삭제">✕</button></div>'+subRow(s,i)).join('')
-    +'<button class="full" id="add">+ 근무 종류 추가</button><p class="hint">같은 근무라도 평일과 휴일의 알람 시각을 따로 정해요. 비워 두면 알람이 없어요. 휴일은 토·일요일과 공휴일(2026~2027년)이고, 날짜를 눌러 평일·휴일을 바꿀 수 있어요.</p>'
+    +'<button class="full" id="add">+ 근무 종류 추가</button><p class="hint">'+(NP?'앞으로 60일치 알람이 자동으로 예약돼요. 알림 권한을 꼭 허용해 주세요. ':'')+'같은 근무라도 평일과 휴일의 알람 시각을 따로 정해요. 비워 두면 알람이 없어요. 휴일은 토·일요일과 공휴일(2026~2027년)이고, 날짜를 눌러 평일·휴일을 바꿀 수 있어요.</p>'
     +'<h3>반복 패턴</h3><div class="pat">'+S.pattern.map(chipOf).join('')+(S.pattern.length?'':'<span class="hint">비어 있음</span>')+'</div>'
     +'<div class="opts">'+S.shifts.map(s=>'<button data-pat="'+s.id+'"><b class="chip" style="background:'+s.color+'">'+esc(s.short)+'</b>추가</button>').join('')+'<button data-pat="-">한 칸 지우기</button><button data-pat="x">전체 지우기</button></div>'
     +'<p class="hint">날짜를 눌러 “패턴 반복”을 쓰면 그 날부터 순서대로 채워집니다.</p>'
@@ -227,6 +227,22 @@ document.addEventListener('click',e=>{
   e.preventDefault();
   P.setAlarm({hour:+m[1],minute:+m[2],message:decodeURIComponent(m[3])}).catch(()=>{});
 });
+const NP=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.AlarmPlugin;
+function syncAlarms(){
+  if(!NP||!NP.scheduleAll)return;
+  const L=[],now=Date.now(),d=new Date();d.setHours(0,0,0,0);
+  for(let i=0;i<60;i++){
+    const k=key(d),a=alarmOf(k);
+    if(a){
+      const p=a.tm.split(':').map(Number),t=new Date(d.getFullYear(),d.getMonth(),d.getDate(),p[0],p[1],0,0).getTime();
+      if(t>now)L.push({t:t,m:a.s.name+' '+a.tm+' ('+(isHol(k)?'휴일':'평일')+')'});
+    }
+    d.setDate(d.getDate()+1);
+  }
+  try{NP.scheduleAll({alarms:L}).catch(()=>{})}catch(e){}
+}
+if(NP){try{NP.requestNotif().catch(()=>{})}catch(e){}}
 render();
+syncAlarms();
 </script>
 </body></html>
