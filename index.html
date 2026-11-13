@@ -18,18 +18,18 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .dow,.grid{display:grid;grid-template-columns:repeat(7,1fr)}
 .dow{padding:0 6px;color:var(--mut);font-size:12px;text-align:center}
 .dow :first-child{color:var(--sun)}.dow :last-child{color:var(--sat)}
-.grid{gap:3px;padding:4px 6px 10px}
-.cell{min-height:62px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+.grid{gap:2px;padding:4px 4px 10px}
+.cell{min-height:118px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
 .cell.out{visibility:hidden}
 .cell .n{font-size:13px}
 .cell.s0 .n{color:var(--sun)}.cell.s6 .n{color:var(--sat)}
 .cell.today{border:2px solid var(--acc)}
 .cell.today .n{font-weight:800}
-.chip{min-width:30px;padding:2px 6px;border-radius:6px;color:#fff;font-size:14px;font-weight:700;text-align:center}
+.chip{font-size:15px;font-weight:800;text-align:center;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .memo{position:absolute;right:4px;top:4px;width:6px;height:6px;border-radius:50%;background:var(--acc)}
 .sum{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 14px}
-.sum span{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;font-size:13px}
-.sum .chip{min-width:24px;padding:1px 5px;font-size:12px}
+.sum span{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px}
+.sum .chip{font-size:14px}
 .bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:10}
 .bg.on{display:flex}
 .sheet{background:var(--card);width:100%;max-width:480px;max-height:85vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
@@ -49,6 +49,7 @@ input[type=color]{width:40px;height:40px;border:1px solid var(--line);border-rad
 .hint{color:var(--mut);font-size:12.5px;margin:6px 0 0}
 .sub{margin:-2px 0 12px 46px;font-size:13px;color:var(--mut);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .tm{font-size:10.5px;color:var(--mut);line-height:1}
+.mm{width:100%;font-size:11px;line-height:1.25;opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow-wrap:anywhere;word-break:break-all;padding:0 1px}
 .cell.hol .n{color:var(--sun)}
 .nx{margin:0 12px 12px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;gap:10px;font-size:14px}
 .nx .chip{display:inline-block}
@@ -90,7 +91,7 @@ function alarmOf(k){const e=S.days[k],s=e&&e.s&&byId(e.s);if(!s||e.n)return null
 function alarmUrl(a){const p=a.tm.split(':').map(Number);return 'intent:#Intent;action=android.intent.action.SET_ALARM;i.android.intent.extra.alarm.HOUR='+p[0]+';i.android.intent.extra.alarm.MINUTES='+p[1]+';S.android.intent.extra.alarm.MESSAGE='+encodeURIComponent(a.s.name)+';end'}
 let cur=new Date();cur.setDate(1);cur.setHours(0,0,0,0);
 let sel=null;
-function chipOf(id){const s=byId(id);return s?'<b class="chip" style="background:'+s.color+'">'+esc(s.short)+'</b>':''}
+function chipOf(id){const s=byId(id);return s?'<b class="chip" style="color:'+s.color+'">'+esc(s.short)+'</b>':''}
 function dayWord(k){const d=new Date(k+'T00:00:00');return (d.getMonth()+1)+'월 '+d.getDate()+'일 ('+WD[d.getDay()]+')'}
 
 function render(){
@@ -105,12 +106,12 @@ function render(){
     const k=y+'-'+pad(m+1)+'-'+pad(d),dow=(first+d-1)%7,e=S.days[k]||{},sh=e.s&&byId(e.s),a=alarmOf(k);
     if(sh)cnt[sh.id]=(cnt[sh.id]||0)+1;
     h+='<div class="cell s'+dow+(isHol(k)?' hol':'')+(k===tk?' today':'')+'" data-k="'+k+'"><span class="n">'+d+'</span>'
-      +(sh?'<span class="chip" style="background:'+sh.color+'">'+esc(sh.short)+'</span>':'')
+      +(sh?'<span class="chip" style="color:'+sh.color+'">'+esc(sh.name)+'</span>':'')
       +(a?'<span class="tm">'+a.tm+'</span>':'')
-      +(e.m?'<i class="memo"></i>':'')+'</div>';
+      +(e.m?'<span class="mm">'+esc(e.m)+'</span>':'')+'</div>';
   }
   $('#grid').innerHTML=h;
-  $('#sum').innerHTML=S.shifts.map(s=>'<span><b class="chip" style="background:'+s.color+'">'+esc(s.short)+'</b>'+esc(s.name)+' '+(cnt[s.id]||0)+'일</span>').join('');
+  $('#sum').innerHTML=S.shifts.map(s=>'<span><b class="chip" style="color:'+s.color+'">'+esc(s.short)+'</b>'+esc(s.name)+' '+(cnt[s.id]||0)+'일</span>').join('');
   const t=new Date();t.setDate(t.getDate()+1);const nk=key(t),na=alarmOf(nk);
   $('#nx').innerHTML=na&&!NP?'<div class="nx"><div>내일 '+dayWord(nk)+' '+chipOf(na.s.id)+' '+esc(na.s.name)+' · '+(isHol(nk)?'휴일':'평일')+'</div><a class="btn" href="'+alarmUrl(na)+'" target="_blank" rel="noopener">⏰ '+na.tm+' 알람 맞추기</a></div>':'';
 }
@@ -122,7 +123,7 @@ function openDay(k){
   sel=k;
   const e=S.days[k]||{},a=alarmOf(k),hol=isHol(k),s0=e.s&&byId(e.s),rt=s0?(hol?s0.ah:s0.aw):'';
   open('<h2>'+dayWord(k)+' · '+(hol?'휴일':'평일')+'</h2><div class="opts">'
-    +S.shifts.map(s=>'<button data-set="'+s.id+'"'+(e.s===s.id?' class="on"':'')+'><b class="chip" style="background:'+s.color+'">'+esc(s.short)+'</b>'+esc(s.name)+'</button>').join('')
+    +S.shifts.map(s=>'<button data-set="'+s.id+'"'+(e.s===s.id?' class="on"':'')+'><b class="chip" style="color:'+s.color+'">'+esc(s.short)+'</b>'+esc(s.name)+'</button>').join('')
     +'<button data-set="">비우기</button></div>'
     +'<button class="full" id="hol">'+(hol?'평일로 바꾸기':'휴일로 바꾸기')+'</button>'
     +(rt?'<h3>알람</h3>'+(NP?(e.n?'<p class="hint">이 날은 알람이 꺼져 있어요 ('+rt+').</p><button class="full pri" id="aln">이 날 알람 켜기</button>':'<p>⏰ '+rt+' 알람이 자동으로 예약돼 있어요 ('+(hol?'휴일':'평일')+').</p><button class="full" id="aln">이 날 알람 끄기</button>'):(a?'<a class="btn" href="'+alarmUrl(a)+'" target="_blank" rel="noopener">⏰ '+a.tm+' 알람 맞추기 ('+esc(a.s.name)+', '+(hol?'휴일':'평일')+')</a><p class="hint">시계 앱이 열리면 저장만 누르세요. 가장 가까운 '+a.tm+'에 한 번 울려요.</p>':'')):'')
@@ -166,7 +167,7 @@ function openSettings(){
     +S.shifts.map((s,i)=>'<div class="row"><input type="color" value="'+s.color+'" data-f="color" data-i="'+i+'" aria-label="색상"><input type="text" class="nm" value="'+esc(s.name)+'" data-f="name" data-i="'+i+'" maxlength="8" aria-label="이름"><input type="text" class="sh" value="'+esc(s.short)+'" data-f="short" data-i="'+i+'" maxlength="2" aria-label="약자"><button data-del="'+i+'" aria-label="삭제">✕</button></div>'+subRow(s,i)).join('')
     +'<button class="full" id="add">+ 근무 종류 추가</button><p class="hint">'+(NP?'앞으로 60일치 알람이 자동으로 예약돼요. 알림 권한을 꼭 허용해 주세요. ':'')+'같은 근무라도 평일과 휴일의 알람 시각을 따로 정해요. 비워 두면 알람이 없어요. 휴일은 토·일요일과 공휴일(2026~2027년)이고, 날짜를 눌러 평일·휴일을 바꿀 수 있어요.</p>'
     +'<h3>반복 패턴</h3><div class="pat">'+S.pattern.map(chipOf).join('')+(S.pattern.length?'':'<span class="hint">비어 있음</span>')+'</div>'
-    +'<div class="opts">'+S.shifts.map(s=>'<button data-pat="'+s.id+'"><b class="chip" style="background:'+s.color+'">'+esc(s.short)+'</b>추가</button>').join('')+'<button data-pat="-">한 칸 지우기</button><button data-pat="x">전체 지우기</button></div>'
+    +'<div class="opts">'+S.shifts.map(s=>'<button data-pat="'+s.id+'"><b class="chip" style="color:'+s.color+'">'+esc(s.short)+'</b>추가</button>').join('')+'<button data-pat="-">한 칸 지우기</button><button data-pat="x">전체 지우기</button></div>'
     +'<p class="hint">날짜를 눌러 “패턴 반복”을 쓰면 그 날부터 순서대로 채워집니다.</p>'
     +(NP?'<h3>알람 테스트</h3><button class="full" id="tst">10초 뒤 테스트 알람</button><p class="hint" id="tstm"></p>':'')
     +'<h3>캘린더 알람</h3><button class="full pri" id="exp">오늘 이후 근무표 복사</button><textarea id="expt" readonly rows="5" style="display:none;width:100%;margin-top:8px;font:12px monospace;background:var(--bg);color:inherit;border:1px solid var(--line);border-radius:10px;padding:8px"></textarea><p class="hint" id="expm">복사한 내용을 Claude 채팅에 붙여넣으면 캘린더(.ics) 파일로 만들어 드려요.</p>'
