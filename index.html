@@ -169,9 +169,19 @@ function openSettings(){
     +'<h3>반복 패턴</h3><div class="pat">'+S.pattern.map(chipOf).join('')+(S.pattern.length?'':'<span class="hint">비어 있음</span>')+'</div>'
     +'<div class="opts">'+S.shifts.map(s=>'<button data-pat="'+s.id+'"><b class="chip" style="color:'+s.color+'">'+esc(s.short)+'</b>추가</button>').join('')+'<button data-pat="-">한 칸 지우기</button><button data-pat="x">전체 지우기</button></div>'
     +'<p class="hint">날짜를 눌러 “패턴 반복”을 쓰면 그 날부터 순서대로 채워집니다.</p>'
+    +(NP?'<h3>알람 상태</h3><div class="hint" id="stat">확인 중…</div><div class="opts" style="margin-top:8px"><button id="ns">알림 설정 열기</button><button id="bs">배터리 설정 열기</button></div>':'<h3>알람 상태</h3><p class="hint">이 화면은 앱(APK)과 연결되지 않았어요. 알람이 자동으로 예약되지 않는 상태예요.</p>')
     +(NP?'<h3>알람 테스트</h3><button class="full" id="tst">10초 뒤 테스트 알람</button><p class="hint" id="tstm"></p>':'')
     +'<h3>캘린더 알람</h3><button class="full pri" id="exp">오늘 이후 근무표 복사</button><textarea id="expt" readonly rows="5" style="display:none;width:100%;margin-top:8px;font:12px monospace;background:var(--bg);color:inherit;border:1px solid var(--line);border-radius:10px;padding:8px"></textarea><p class="hint" id="expm">복사한 내용을 Claude 채팅에 붙여넣으면 캘린더(.ics) 파일로 만들어 드려요.</p>'
     +'<button class="full" id="done">닫기</button>');
+  loadStat();
+}
+function loadStat(){
+  const el=$('#stat');
+  if(!el||!NP)return;
+  NP.status().then(r=>{
+    const nx=r.next?new Date(r.next):null;
+    el.innerHTML='알림 권한: '+(r.notif?'허용':'<b>꺼져 있어요. 알림 설정에서 켜 주세요</b>')+'<br>예약된 알람: '+r.n+'개'+(nx?'<br>다음 알람: '+(nx.getMonth()+1)+'월 '+nx.getDate()+'일 '+pad(nx.getHours())+':'+pad(nx.getMinutes()):'')+'<br>배터리 제한 없음: '+(r.battery?'예':'아니오');
+  }).catch(()=>{el.textContent='상태를 읽지 못했어요. 새 버전 APK로 다시 설치해 보세요.'});
 }
 function exportTxt(){
   const tk=key(new Date()),L=[],ta=$('#expt'),m=$('#expm');
@@ -197,6 +207,8 @@ $('#bg').onclick=e=>{
   else if(b.id==='hol')toggleHol();
   else if(b.id==='aln')toggleAl();
   else if(b.id==='tst')testAlarm();
+  else if(b.id==='ns'&&NP)NP.openNotifSettings();
+  else if(b.id==='bs'&&NP)NP.openBatterySettings();
   else if(b.id==='exp')exportTxt();
   else if(b.id==='add'){S.shifts.push({id:'s'+Date.now(),name:'새 근무',short:'새',color:'#'+Math.floor(Math.random()*0x888888+0x333333).toString(16).padStart(6,'0'),aw:'',ah:''});save();render();openSettings()}
   else if(b.dataset.del!==undefined){
@@ -230,14 +242,14 @@ $('#grid').addEventListener('touchend',e=>{
   if(Math.abs(dx)>70){cur.setMonth(cur.getMonth()+(dx<0?1:-1));render()}
 });
 document.addEventListener('click',e=>{
-  const a=e.target.closest('a.btn'),P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.AlarmPlugin;
+  const a=e.target.closest('a.btn'),P=NP;
   if(!a||!P)return;
   const m=a.href.match(/HOUR=(\d+);i\.android\.intent\.extra\.alarm\.MINUTES=(\d+);S\.android\.intent\.extra\.alarm\.MESSAGE=([^;]*)/);
   if(!m)return;
   e.preventDefault();
   P.setAlarm({hour:+m[1],minute:+m[2],message:decodeURIComponent(m[3])}).catch(()=>{});
 });
-const NP=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.AlarmPlugin;
+const NP=(()=>{try{const C=window.Capacitor;if(C&&(!C.isNativePlatform||C.isNativePlatform()))return C.registerPlugin?C.registerPlugin('AlarmPlugin'):((C.Plugins&&C.Plugins.AlarmPlugin)||null)}catch(e){}return null})();
 function syncAlarms(){
   if(!NP||!NP.scheduleAll)return;
   const L=[],now=Date.now(),d=new Date();d.setHours(0,0,0,0);

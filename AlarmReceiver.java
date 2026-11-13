@@ -21,7 +21,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         Uri snd = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
         if (Build.VERSION.SDK_INT >= 26) {
-            NotificationChannel ch = new NotificationChannel("wt_alarm", "근무 알람", NotificationManager.IMPORTANCE_HIGH);
+            NotificationChannel ch = new NotificationChannel("wt_alarm2", "근무 알람", NotificationManager.IMPORTANCE_HIGH);
             AudioAttributes aa = new AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -35,14 +35,15 @@ public class AlarmReceiver extends BroadcastReceiver {
         PendingIntent content = PendingIntent.getActivity(c, 0, open,
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         Notification.Builder b = Build.VERSION.SDK_INT >= 26
-                ? new Notification.Builder(c, "wt_alarm")
+                ? new Notification.Builder(c, "wt_alarm2")
                 : new Notification.Builder(c);
         b.setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setContentTitle("근무 알람")
                 .setContentText(msg)
                 .setCategory(Notification.CATEGORY_ALARM)
                 .setAutoCancel(true)
-                .setContentIntent(content);
+                .setContentIntent(content)
+                .setFullScreenIntent(content, true);
         if (Build.VERSION.SDK_INT >= 26) {
             b.setTimeoutAfter(120000);
         } else {
