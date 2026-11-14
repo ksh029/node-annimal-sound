@@ -148,6 +148,15 @@ public class AlarmPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void setWidgetData(PluginCall call) {
+        JSArray arr = call.getArray("rows");
+        getContext().getSharedPreferences(AlarmScheduler.PREF, Context.MODE_PRIVATE)
+                .edit().putString("widget", arr == null ? "[]" : arr.toString()).apply();
+        WorkWidget.refreshAll(getContext());
+        call.resolve();
+    }
+
+    @PluginMethod
     public void setAlarm(PluginCall call) {
         Intent i = new Intent(AlarmClock.ACTION_SET_ALARM);
         i.putExtra(AlarmClock.EXTRA_HOUR, call.getInt("hour", 0));

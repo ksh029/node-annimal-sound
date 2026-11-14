@@ -21,7 +21,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .grid{gap:2px;padding:4px 4px 10px}
 .cell{min-height:98px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
 .cell.out{visibility:hidden}
-.cell .n{font-size:13px}
+.cell .n{font-size:15px;font-weight:800}
+.top{display:flex;align-items:baseline;justify-content:center;gap:2px;white-space:nowrap}
+.lu{font-size:9.5px;color:var(--mut);font-weight:400}
+.hn{font-size:9.5px;color:var(--sun);font-weight:700;line-height:1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cell.s0 .n{color:var(--sun)}.cell.s6 .n{color:var(--sat)}
 .cell.today{border:2px solid var(--acc)}
 .cell.today .n{font-weight:800}
@@ -76,8 +79,21 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const pad=n=>String(n).padStart(2,'0');
 const key=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const WD=['일','월','화','수','목','금','토'];
-const HOL=new Set(('2026-01-01 2026-02-16 2026-02-17 2026-02-18 2026-03-01 2026-03-02 2026-05-05 2026-05-24 2026-05-25 2026-06-03 2026-06-06 2026-08-15 2026-08-17 2026-09-24 2026-09-25 2026-09-26 2026-10-03 2026-10-05 2026-10-09 2026-12-25 '
-+'2027-01-01 2027-02-06 2027-02-07 2027-02-08 2027-02-09 2027-03-01 2027-05-05 2027-05-13 2027-06-06 2027-08-15 2027-08-16 2027-09-14 2027-09-15 2027-09-16 2027-10-03 2027-10-04 2027-10-09 2027-10-11 2027-12-25 2027-12-27').split(' '));
+const HOLN={};'2026-01-01 신정|2026-02-16 연휴|2026-02-17 설날|2026-02-18 연휴|2026-03-01 삼일절|2026-03-02 대체|2026-05-05 어린이날|2026-05-24 부처님|2026-05-25 대체|2026-06-03 선거|2026-06-06 현충일|2026-08-15 광복절|2026-08-17 대체|2026-09-24 연휴|2026-09-25 추석|2026-09-26 연휴|2026-10-03 개천절|2026-10-05 대체|2026-10-09 한글날|2026-12-25 성탄절|2027-01-01 신정|2027-02-06 연휴|2027-02-07 설날|2027-02-08 연휴|2027-02-09 대체|2027-03-01 삼일절|2027-05-05 어린이날|2027-05-13 부처님|2027-06-06 현충일|2027-08-15 광복절|2027-08-16 대체|2027-09-14 연휴|2027-09-15 추석|2027-09-16 연휴|2027-10-03 개천절|2027-10-04 대체|2027-10-09 한글날|2027-10-11 대체|2027-12-25 성탄절|2027-12-27 대체'.split('|').forEach(x=>{const a=x.split(' ');HOLN[a[0]]=a[1]});
+const LU={};
+function lunar(k){
+  if(LU[k]!==undefined)return LU[k];
+  let r='';
+  try{
+    let m='',dd='';
+    new Intl.DateTimeFormat('ko-u-ca-chinese',{month:'numeric',day:'numeric'}).formatToParts(new Date(k+'T12:00:00')).forEach(p=>{if(p.type==='month')m=p.value;if(p.type==='day')dd=p.value});
+    const mm=m.replace(/\D/g,''),d2=dd.replace(/\D/g,'');
+    if(mm&&d2)r=(/윤|bis/i.test(m)?'윤':'')+mm+'.'+d2;
+  }catch(e){r=''}
+  LU[k]=r;return r;
+}
+function lunarEvery(k){const l=lunar(k),m=l.match(/\.(\d+)$/);return m&&['1','10','20','30'].indexOf(m[1])>=0?l:''}
+function lunarWord(k){const l=lunar(k),m=l.match(/^(윤?)(\d+)\.(\d+)$/);return m?'음력 '+m[1]+m[2]+'월 '+m[3]+'일':''}
 const DEF={shifts:[{id:'a',name:'조근',short:'조',color:'#e08a00',aw:'06:00',ah:'07:00'},{id:'b',name:'야근',short:'야',color:'#4a4fc4',aw:'',ah:''},{id:'c',name:'휴무',short:'휴',color:'#2e9b62',aw:'',ah:''},{id:'d',name:'연차',short:'연',color:'#d6457a',aw:'',ah:''}],days:{},pattern:[]};
 let S=null;
 try{S=JSON.parse(localStorage.getItem('worktable'))}catch(e){}
@@ -85,7 +101,7 @@ if(!S||!S.shifts)S=JSON.parse(JSON.stringify(DEF));
 S.shifts.forEach(s=>{if(s.aw===undefined){let v='';if(s.t){const p=s.t.split(':').map(Number),t=((p[0]*60+p[1]-(+s.al||0))%1440+1440)%1440;v=pad(Math.floor(t/60))+':'+pad(t%60)}s.aw=v;s.ah=v}});
 const save=()=>{try{localStorage.setItem('worktable',JSON.stringify(S))}catch(e){}syncAlarms()};
 const byId=id=>S.shifts.find(x=>x.id===id);
-const defHol=k=>{const d=new Date(k+'T00:00:00').getDay();return d===0||d===6||HOL.has(k)};
+const defHol=k=>{const d=new Date(k+'T00:00:00').getDay();return d===0||d===6||HOLN[k]!==undefined};
 const isHol=k=>{const e=S.days[k];return e&&e.h!==undefined?!!e.h:defHol(k)};
 const clean=k=>{const e=S.days[k];if(e&&e.s===undefined&&!e.m&&e.h===undefined&&!e.n)delete S.days[k]};
 function alarmOf(k){const e=S.days[k],s=e&&e.s&&byId(e.s);if(!s||e.n)return null;const tm=isHol(k)?s.ah:s.aw;return tm?{s:s,tm:tm}:null}
@@ -106,7 +122,7 @@ function render(){
   for(let d=1;d<=len;d++){
     const k=y+'-'+pad(m+1)+'-'+pad(d),dow=(first+d-1)%7,e=S.days[k]||{},sh=e.s&&byId(e.s),a=alarmOf(k);
     if(sh)cnt[sh.id]=(cnt[sh.id]||0)+1;
-    h+='<div class="cell s'+dow+(isHol(k)?' hol':'')+(k===tk?' today':'')+'" data-k="'+k+'"><span class="n">'+d+'</span>'
+    h+='<div class="cell s'+dow+(isHol(k)?' hol':'')+(k===tk?' today':'')+'" data-k="'+k+'"><div class="top"><span class="n">'+d+'</span><span class="lu">'+lunarEvery(k)+'</span></div>'+(isHol(k)&&HOLN[k]?'<span class="hn">'+HOLN[k]+'</span>':'')
       +(sh?'<span class="chip" style="color:'+sh.color+'">'+esc(sh.name)+'</span>':'')
       +(a?'<span class="tm">'+a.tm+'</span>':'')
       +(e.m?'<span class="mm">'+esc(e.m)+'</span>':'')+'</div>';
@@ -123,7 +139,7 @@ function close(){$('#bg').classList.remove('on')}
 function openDay(k){
   sel=k;
   const e=S.days[k]||{},a=alarmOf(k),hol=isHol(k),s0=e.s&&byId(e.s),rt=s0?(hol?s0.ah:s0.aw):'';
-  open('<h2>'+dayWord(k)+' · '+(hol?'휴일':'평일')+'</h2><div class="opts">'
+  open('<h2>'+dayWord(k)+' · '+(hol?'휴일':'평일')+(hol&&HOLN[k]?' ('+HOLN[k]+')':'')+'</h2>'+(lunarWord(k)?'<p class="hint" style="margin:-6px 0 10px">'+lunarWord(k)+'</p>':'')+'<div class="opts">'
     +S.shifts.map(s=>'<button data-set="'+s.id+'"'+(e.s===s.id?' class="on"':'')+'><b class="chip" style="color:'+s.color+'">'+esc(s.short)+'</b>'+esc(s.name)+'</button>').join('')
     +'<button data-set="">비우기</button></div>'
     +'<button class="full" id="hol">'+(hol?'평일로 바꾸기':'휴일로 바꾸기')+'</button>'
@@ -170,6 +186,7 @@ function openSettings(){
     +'<h3>반복 패턴</h3><div class="pat">'+S.pattern.map(chipOf).join('')+(S.pattern.length?'':'<span class="hint">비어 있음</span>')+'</div>'
     +'<div class="opts">'+S.shifts.map(s=>'<button data-pat="'+s.id+'"><b class="chip" style="color:'+s.color+'">'+esc(s.short)+'</b>추가</button>').join('')+'<button data-pat="-">한 칸 지우기</button><button data-pat="x">전체 지우기</button></div>'
     +'<p class="hint">날짜를 눌러 “패턴 반복”을 쓰면 그 날부터 순서대로 채워집니다.</p>'
+    +(NP?'<h3>위젯</h3><p class="hint">홈 화면의 빈 곳을 길게 눌러 위젯 → 근무표를 추가하세요. 오늘부터 7일의 근무와 알람이 보여요.</p>':'')
     +(NP?'<h3>알람음</h3><div class="hint" id="snd">…</div><div class="opts" style="margin-top:8px"><button id="sp">알람음 선택</button><button id="sv">미리듣기</button></div>':'')
     +(NP?'<h3>알람 상태</h3><div class="hint" id="stat">확인 중…</div><div class="opts" style="margin-top:8px"><button id="ns">알림 설정 열기</button><button id="bs">배터리 설정 열기</button></div>':'<h3>알람 상태</h3><p class="hint">이 화면은 앱(APK)과 연결되지 않았어요. 알람이 자동으로 예약되지 않는 상태예요.</p>')
     +(NP?'<h3>알람 테스트</h3><button class="full" id="tst">10초 뒤 테스트 알람</button><p class="hint" id="tstm"></p>':'')
@@ -259,8 +276,19 @@ document.addEventListener('click',e=>{
   P.setAlarm({hour:+m[1],minute:+m[2],message:decodeURIComponent(m[3])}).catch(()=>{});
 });
 const NP=(()=>{try{const C=window.Capacitor;if(C&&(!C.isNativePlatform||C.isNativePlatform()))return C.registerPlugin?C.registerPlugin('AlarmPlugin'):((C.Plugins&&C.Plugins.AlarmPlugin)||null)}catch(e){}return null})();
+function pushWidget(){
+  if(!NP||!NP.setWidgetData)return;
+  const R=[],d=new Date();d.setHours(0,0,0,0);
+  for(let i=0;i<40;i++){
+    const k=key(d),e=S.days[k]||{},sh=e.s&&byId(e.s),a=alarmOf(k);
+    R.push({d:k,w:WD[d.getDay()],n:sh?sh.name:'',c:sh?sh.color:'',t:a?a.tm:'',h:isHol(k)?1:0});
+    d.setDate(d.getDate()+1);
+  }
+  try{NP.setWidgetData({rows:R}).catch(()=>{})}catch(e){}
+}
 function syncAlarms(){
   if(!NP||!NP.scheduleAll)return;
+  pushWidget();
   const L=[],now=Date.now(),d=new Date();d.setHours(0,0,0,0);
   for(let i=0;i<60;i++){
     const k=key(d),a=alarmOf(k);
