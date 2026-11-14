@@ -80,19 +80,23 @@ const pad=n=>String(n).padStart(2,'0');
 const key=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const WD=['일','월','화','수','목','금','토'];
 const HOLN={};'2026-01-01 신정|2026-02-16 연휴|2026-02-17 설날|2026-02-18 연휴|2026-03-01 삼일절|2026-03-02 대체|2026-05-05 어린이날|2026-05-24 부처님|2026-05-25 대체|2026-06-03 선거|2026-06-06 현충일|2026-08-15 광복절|2026-08-17 대체|2026-09-24 연휴|2026-09-25 추석|2026-09-26 연휴|2026-10-03 개천절|2026-10-05 대체|2026-10-09 한글날|2026-12-25 성탄절|2027-01-01 신정|2027-02-06 연휴|2027-02-07 설날|2027-02-08 연휴|2027-02-09 대체|2027-03-01 삼일절|2027-05-05 어린이날|2027-05-13 부처님|2027-06-06 현충일|2027-08-15 광복절|2027-08-16 대체|2027-09-14 연휴|2027-09-15 추석|2027-09-16 연휴|2027-10-03 개천절|2027-10-04 대체|2027-10-09 한글날|2027-10-11 대체|2027-12-25 성탄절|2027-12-27 대체'.split('|').forEach(x=>{const a=x.split(' ');HOLN[a[0]]=a[1]});
+const LT=[];'2024-12-01:11 2024-12-31:12 2025-01-29:1 2025-02-28:2 2025-03-29:3 2025-04-28:4 2025-05-27:5 2025-06-25:6 2025-07-25:L6 2025-08-23:7 2025-09-22:8 2025-10-21:9 2025-11-20:10 2025-12-20:11 2026-01-19:12 2026-02-17:1 2026-03-19:2 2026-04-17:3 2026-05-17:4 2026-06-15:5 2026-07-14:6 2026-08-13:7 2026-09-11:8 2026-10-10:9 2026-11-09:10 2026-12-09:11 2027-01-08:12 2027-02-07:1 2027-03-08:2 2027-04-07:3 2027-05-06:4 2027-06-05:5 2027-07-04:6 2027-08-02:7 2027-09-01:8 2027-09-30:9 2027-10-29:10 2027-11-28:11 2027-12-28:12 2028-01-26:1 2028-02-25:2 2028-03-26:3 2028-04-25:4 2028-05-24:5 2028-06-23:L5 2028-07-22:6 2028-08-20:7 2028-09-19:8 2028-10-18:9 2028-11-16:10 2028-12-16:11 2029-01-15:12 2029-02-13:1 2029-03-15:2 2029-04-14:3 2029-05-13:4 2029-06-12:5 2029-07-11:6 2029-08-10:7 2029-09-08:8 2029-10-08:9 2029-11-06:10 2029-12-05:11 2030-01-04:12 2030-02-02:1 2030-03-04:2 2030-04-03:3 2030-05-02:4 2030-06-01:5 2030-07-01:6 2030-07-30:7 2030-08-29:8 2030-09-27:9 2030-10-27:10 2030-11-25:11 2030-12-25:12 2031-01-23:1 2031-02-21:2 2031-03-23:3 2031-04-22:L3 2031-05-21:4 2031-06-20:5 2031-07-19:6 2031-08-18:7 2031-09-17:8 2031-10-16:9 2031-11-15:10 2031-12-14:11 2032-01-13:12 2032-02-11:1 2032-03-12:2 2032-04-10:3 2032-05-09:4 2032-06-08:5 2032-07-07:6 2032-08-06:7 2032-09-05:8 2032-10-04:9 2032-11-03:10 2032-12-03:11 2033-01-01:12 2033-01-31:1 2033-03-01:2 2033-03-31:3 2033-04-29:4 2033-05-28:5 2033-06-27:6 2033-07-26:7 2033-08-25:8 2033-09-23:9 2033-10-23:10 2033-11-22:11 2033-12-22:L11 2034-01-20:12 2034-02-19:1 2034-03-20:2 2034-04-19:3 2034-05-18:4 2034-06-16:5 2034-07-16:6 2034-08-14:7 2034-09-13:8 2034-10-12:9 2034-11-11:10 2034-12-11:11 2035-01-09:12 2035-02-08:1 2035-03-10:2 2035-04-08:3 2035-05-08:4 2035-06-06:5 2035-07-05:6 2035-08-04:7 2035-09-02:8 2035-10-01:9 2035-10-31:10 2035-11-30:11 2035-12-29:12 2036-01-28:1 2036-02-27:2 2036-03-28:3 2036-04-26:4 2036-05-26:5 2036-06-24:6 2036-07-23:L6 2036-08-22:7 2036-09-20:8 2036-10-19:9 2036-11-18:10 2036-12-17:11 2037-01-16:12'.split(' ').forEach(x=>{const a=x.split(':');LT.push({k:a[0],leap:a[1].charAt(0)==='L',m:a[1].replace('L','')})});
 const LU={};
 function lunar(k){
   if(LU[k]!==undefined)return LU[k];
   let r='';
-  try{
-    let m='',dd='';
-    new Intl.DateTimeFormat('ko-u-ca-chinese',{month:'numeric',day:'numeric'}).formatToParts(new Date(k+'T12:00:00')).forEach(p=>{if(p.type==='month')m=p.value;if(p.type==='day')dd=p.value});
-    const mm=m.replace(/\D/g,''),d2=dd.replace(/\D/g,'');
-    if(mm&&d2)r=(/윤|bis/i.test(m)?'윤':'')+mm+'.'+d2;
-  }catch(e){r=''}
+  if(k>=LT[0].k){
+    let i=-1;
+    for(let j=0;j<LT.length;j++){if(LT[j].k<=k)i=j;else break}
+    if(i>=0&&i<LT.length-1){
+      const a=LT[i].k.split('-').map(Number),b=k.split('-').map(Number);
+      const day=Math.round((Date.UTC(b[0],b[1]-1,b[2])-Date.UTC(a[0],a[1]-1,a[2]))/864e5)+1;
+      r=(LT[i].leap?'윤':'')+LT[i].m+'.'+day;
+    }
+  }
   LU[k]=r;return r;
 }
-function lunarEvery(k){const l=lunar(k),m=l.match(/\.(\d+)$/);return m&&['1','10','20','30'].indexOf(m[1])>=0?l:''}
+function lunarEvery(k){const l=lunar(k),m=l.match(/\.(\d+)$/);return m&&['1','10','20'].indexOf(m[1])>=0?l:''}
 function lunarWord(k){const l=lunar(k),m=l.match(/^(윤?)(\d+)\.(\d+)$/);return m?'음력 '+m[1]+m[2]+'월 '+m[3]+'일':''}
 const DEF={shifts:[{id:'a',name:'조근',short:'조',color:'#e08a00',aw:'06:00',ah:'07:00'},{id:'b',name:'야근',short:'야',color:'#4a4fc4',aw:'',ah:''},{id:'c',name:'휴무',short:'휴',color:'#2e9b62',aw:'',ah:''},{id:'d',name:'연차',short:'연',color:'#d6457a',aw:'',ah:''}],days:{},pattern:[]};
 let S=null;
@@ -186,7 +190,7 @@ function openSettings(){
     +'<h3>반복 패턴</h3><div class="pat">'+S.pattern.map(chipOf).join('')+(S.pattern.length?'':'<span class="hint">비어 있음</span>')+'</div>'
     +'<div class="opts">'+S.shifts.map(s=>'<button data-pat="'+s.id+'"><b class="chip" style="color:'+s.color+'">'+esc(s.short)+'</b>추가</button>').join('')+'<button data-pat="-">한 칸 지우기</button><button data-pat="x">전체 지우기</button></div>'
     +'<p class="hint">날짜를 눌러 “패턴 반복”을 쓰면 그 날부터 순서대로 채워집니다.</p>'
-    +(NP?'<h3>위젯</h3><p class="hint">홈 화면의 빈 곳을 길게 눌러 위젯 → 근무표를 추가하세요. 오늘부터 7일의 근무와 알람이 보여요.</p>':'')
+    +(NP?'<h3>위젯</h3><p class="hint">홈 화면의 빈 곳을 길게 눌러 위젯 → 근무표를 추가하세요. 월간 달력이 보이고 ‹ › 로 달을 넘길 수 있어요.</p>':'')
     +(NP?'<h3>알람음</h3><div class="hint" id="snd">…</div><div class="opts" style="margin-top:8px"><button id="sp">알람음 선택</button><button id="sv">미리듣기</button></div>':'')
     +(NP?'<h3>알람 상태</h3><div class="hint" id="stat">확인 중…</div><div class="opts" style="margin-top:8px"><button id="ns">알림 설정 열기</button><button id="bs">배터리 설정 열기</button></div>':'<h3>알람 상태</h3><p class="hint">이 화면은 앱(APK)과 연결되지 않았어요. 알람이 자동으로 예약되지 않는 상태예요.</p>')
     +(NP?'<h3>알람 테스트</h3><button class="full" id="tst">10초 뒤 테스트 알람</button><p class="hint" id="tstm"></p>':'')
@@ -278,11 +282,11 @@ document.addEventListener('click',e=>{
 const NP=(()=>{try{const C=window.Capacitor;if(C&&(!C.isNativePlatform||C.isNativePlatform()))return C.registerPlugin?C.registerPlugin('AlarmPlugin'):((C.Plugins&&C.Plugins.AlarmPlugin)||null)}catch(e){}return null})();
 function pushWidget(){
   if(!NP||!NP.setWidgetData)return;
-  const R=[],d=new Date();d.setHours(0,0,0,0);
-  for(let i=0;i<40;i++){
-    const k=key(d),e=S.days[k]||{},sh=e.s&&byId(e.s),a=alarmOf(k);
-    R.push({d:k,w:WD[d.getDay()],n:sh?sh.name:'',c:sh?sh.color:'',t:a?a.tm:'',h:isHol(k)?1:0});
-    d.setDate(d.getDate()+1);
+  const R=[],t=new Date(),d=new Date(t.getFullYear(),t.getMonth()-2,1),end=new Date(t.getFullYear(),t.getMonth()+6,1);
+  for(;d<end;d.setDate(d.getDate()+1)){
+    const k=key(d),e=S.days[k]||{},sh=e.s&&byId(e.s),wk=d.getDay()===0||d.getDay()===6,hol=isHol(k);
+    const hn=hol&&HOLN[k]?HOLN[k]:'',h=(hol&&(!wk||HOLN[k]))?1:0;
+    if(sh||e.m||hn||h)R.push({d:k,s:sh?sh.short:'',c:sh?sh.color:'',m:e.m||'',hn:hn,h:h});
   }
   try{NP.setWidgetData({rows:R}).catch(()=>{})}catch(e){}
 }
