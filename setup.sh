@@ -4,6 +4,7 @@ npm install
 mkdir -p www
 cp index.html www/index.html
 npx cap add android
+sed -i "s/versionCode 1/versionCode ${VERSION_CODE:-1}/" android/app/build.gradle || true
 DEST=android/app/src/main/java/com/worktable/app
 mkdir -p "$DEST"
 cp AlarmPlugin.java AlarmScheduler.java AlarmReceiver.java BootReceiver.java WorkWidget.java MainActivity.java "$DEST/"
