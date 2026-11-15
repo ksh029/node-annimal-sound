@@ -149,12 +149,15 @@ public class WorkWidget extends AppWidgetProvider {
         float headH = h * 0.075f;
         float cw = w / 7f;
         String[] wd = {"일", "월", "화", "수", "목", "금", "토"};
+        p.setStyle(Paint.Style.FILL);
+        p.setColor(0xFFE6EDF7);
+        cv.drawRoundRect(new RectF(0f, 0f, w, headH * 0.92f), headH * 0.3f, headH * 0.3f, p);
         p.setTypeface(Typeface.DEFAULT_BOLD);
         p.setTextAlign(Paint.Align.CENTER);
-        p.setTextSize(headH * 0.62f);
+        p.setTextSize(headH * 0.6f);
         for (int i = 0; i < 7; i++) {
-            p.setColor(i == 0 ? RED : (i == 6 ? BLUE : GRAY));
-            cv.drawText(wd[i], cw * i + cw / 2f, headH * 0.74f, p);
+            p.setColor(i == 0 ? RED : (i == 6 ? BLUE : 0xFF3C4A5C));
+            cv.drawText(wd[i], cw * i + cw / 2f, headH * 0.64f, p);
         }
         Calendar first = Calendar.getInstance();
         first.set(year, month, 1, 12, 0, 0);
